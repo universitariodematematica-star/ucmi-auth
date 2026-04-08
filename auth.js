@@ -19,7 +19,7 @@
     function bloquearAcceso(mensaje) {
         document.body.innerHTML = "<h2 style='text-align:center;margin-top:50px;'>" + mensaje + "</h2>";
         setTimeout(() => {
-            window.location.href = "https://universitariocmi.blogspot.com/2024/08/portal-de-autenticacion-ucmi-a1.html";
+            window.location.href = "https://ucminglesa1.blogspot.com/2026/04/portal-de-autenticacion.html";
         }, 3000);
     }
 
