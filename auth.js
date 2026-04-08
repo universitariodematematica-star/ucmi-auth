@@ -5,9 +5,15 @@
         return match ? match[2] : null;
     }
 
+    function setCookie(nombre, valor) {
+        document.cookie = nombre + "=" + valor + "; path=/";
+    }
+
     function limpiarCookies() {
         document.cookie = "codigo=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         document.cookie = "expiracion=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie = "session_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        localStorage.removeItem("session_id");
     }
 
     function bloquearAcceso(mensaje) {
@@ -21,8 +27,47 @@
         const ahora = new Date();
         const exp = new Date(fechaExp);
         const diff = exp - ahora;
-        return Math.floor(diff / (1000 * 60 * 60 * 24));
+        return Math.ceil(diff / (1000 * 60 * 60 * 24));
     }
+
+    function mostrarBanner(dias) {
+        const banner = document.createElement("div");
+
+        banner.style.position = "fixed";
+        banner.style.top = "0";
+        banner.style.left = "0";
+        banner.style.width = "100%";
+        banner.style.backgroundColor = dias <= 5 ? "red" : "#000080";
+        banner.style.color = "white";
+        banner.style.textAlign = "center";
+        banner.style.padding = "10px";
+        banner.style.fontSize = "16px";
+        banner.style.zIndex = "9999";
+
+        banner.innerHTML = "Acceso válido | Te quedan " + dias + " días";
+
+        document.body.appendChild(banner);
+        document.body.style.marginTop = "50px";
+    }
+
+    function generarSessionID() {
+        return Math.random().toString(36).substring(2) + Date.now();
+    }
+
+    function validarSesionUnica() {
+        const cookieSession = getCookie("session_id");
+        const localSession = localStorage.getItem("session_id");
+
+        if (!cookieSession || !localSession || cookieSession !== localSession) {
+            limpiarCookies();
+            bloquearAcceso("Sesión inválida o abierta en otro dispositivo");
+            return false;
+        }
+        return true;
+    }
+
+    // 🔒 OCULTAR TODO (anti-parpadeo)
+    document.documentElement.style.display = "none";
 
     const codigo = getCookie("codigo");
     const expiracion = getCookie("expiracion");
@@ -41,9 +86,15 @@
         return;
     }
 
+    // 🔐 Validar sesión única
+    if (!validarSesionUnica()) return;
+
     // Usuario válido
     const dias = calcularDiasRestantes(expiracion);
 
-    console.log("Acceso válido. Días restantes:", dias);
+    mostrarBanner(dias);
+
+    // 🔓 Mostrar contenido después de validar
+    document.documentElement.style.display = "block";
 
 })();
