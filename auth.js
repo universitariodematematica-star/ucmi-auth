@@ -17,16 +17,16 @@
     }
 
     function bloquearAcceso(mensaje) {
-    document.documentElement.style.display = "block"; // evitar pantalla en blanco
-    document.body.innerHTML = `
-        <h2 style="text-align:center;margin-top:50px;">${mensaje}</h2>
-        <p style="text-align:center;">Redirigiendo...</p>
-    `;
+        document.documentElement.style.display = "block";
+        document.body.innerHTML = `
+            <h2 style="text-align:center;margin-top:50px;">${mensaje}</h2>
+            <p style="text-align:center;">Redirigiendo...</p>
+        `;
 
-    setTimeout(() => {
-        window.location.href = "https://ucminglesa1.blogspot.com/2026/04/portal-de-autenticacion.html";
-    }, 2000);
-}
+        setTimeout(() => {
+            window.location.href = "https://ucminglesa1.blogspot.com/2026/04/portal-de-autenticacion.html";
+        }, 2000);
+    }
 
     function calcularDiasRestantes(fechaExp) {
         const ahora = new Date();
@@ -46,7 +46,6 @@
         banner.style.color = "white";
         banner.style.textAlign = "center";
         banner.style.padding = "10px";
-        banner.style.fontSize = "16px";
         banner.style.zIndex = "9999";
 
         banner.innerHTML = "Acceso válido | Te quedan " + dias + " días";
@@ -60,18 +59,28 @@
     }
 
     function validarSesionUnica() {
-        const cookieSession = getCookie("session_id");
-        const localSession = localStorage.getItem("session_id");
+        let cookieSession = getCookie("session_id");
+        let localSession = localStorage.getItem("session_id");
 
-        if (!cookieSession || !localSession || cookieSession !== localSession) {
+        // 🔥 CASO 1: no existe sesión → crearla
+        if (!cookieSession && !localSession) {
+            const nuevaSesion = generarSessionID();
+            setCookie("session_id", nuevaSesion);
+            localStorage.setItem("session_id", nuevaSesion);
+            return true;
+        }
+
+        // 🔥 CASO 2: inconsistencia → bloquear
+        if (cookieSession !== localSession) {
             limpiarCookies();
-            bloquearAcceso("Sesión inválida o abierta en otro dispositivo");
+            bloquearAcceso("Sesión abierta en otro dispositivo");
             return false;
         }
+
         return true;
     }
 
-    // 🔒 OCULTAR TODO (anti-parpadeo)
+    // 🔒 Anti-parpadeo
     document.documentElement.style.display = "none";
 
     const codigo = getCookie("codigo");
@@ -94,12 +103,10 @@
     // 🔐 Validar sesión única
     if (!validarSesionUnica()) return;
 
-    // Usuario válido
+    // ✅ Usuario válido
     const dias = calcularDiasRestantes(expiracion);
-
     mostrarBanner(dias);
 
-    // 🔓 Mostrar contenido después de validar
     document.documentElement.style.display = "block";
 
 })();
