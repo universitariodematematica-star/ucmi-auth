@@ -1,7 +1,8 @@
+<script>
 (function () {
 
     /* =========================
-       🔐 BASE DE USUARIOS
+       🔐 BASE DE USUARIOS (FUENTE DE VERDAD)
     ========================= */
 
     const estudiantes = {
@@ -12,20 +13,18 @@
     };
 
     /* =========================
+       💾 PUBLICAR BASE (CLAVE DEL SISTEMA)
+       → esto es lo que te faltaba
+    ========================= */
+    localStorage.setItem("db_estudiantes", JSON.stringify(estudiantes));
+
+    /* =========================
        🔧 UTILIDADES
     ========================= */
 
     function getCookie(name) {
         const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
         return match ? decodeURIComponent(match[2]) : null;
-    }
-
-    function generarSessionID() {
-        return Math.random().toString(36).substring(2) + Date.now();
-    }
-
-    function formatearFecha(fecha) {
-        return new Date(fecha).toLocaleString();
     }
 
     function calcularDias(fecha) {
@@ -59,25 +58,26 @@
 
         const codigo = getCookie("codigo");
         const session = getCookie("session_id");
-        const expCookie = getCookie("expiracion");
 
         /* ❌ sin datos */
-        if (!codigo || !session || !expCookie) {
+        if (!codigo || !session) {
             bloquear("Acceso no autorizado");
             return;
         }
 
+        /* 📦 cargar base desde AUTH */
+        const db = JSON.parse(localStorage.getItem("db_estudiantes") || "{}");
+
         /* ❌ código inválido */
-        if (!estudiantes[codigo]) {
+        if (!db[codigo]) {
             bloquear("Código inválido");
             return;
         }
 
-        const usuario = estudiantes[codigo];
-        const expReal = new Date(usuario.expira);
+        const usuario = db[codigo];
 
-        /* ❌ expirado (FUENTE REAL, no cookie) */
-        if (new Date() > expReal) {
+        /* ❌ expiración real (FUENTE DE VERDAD) */
+        if (new Date() > new Date(usuario.expira)) {
             bloquear("Acceso expirado");
             return;
         }
@@ -108,7 +108,8 @@
         banner.style.color = "white";
         banner.style.background = dias <= 5 ? "red" : "#000080";
         banner.style.zIndex = "9999";
-        banner.innerHTML = `Acceso activo | ${usuario.nombre} | ${dias} días restantes`;
+        banner.innerHTML =
+            `Acceso activo | ${usuario.nombre} | ${dias} días restantes`;
 
         document.body.appendChild(banner);
 
@@ -118,3 +119,4 @@
     });
 
 })();
+</script>
