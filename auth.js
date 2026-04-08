@@ -17,11 +17,16 @@
     }
 
     function bloquearAcceso(mensaje) {
-        document.body.innerHTML = "<h2 style='text-align:center;margin-top:50px;'>" + mensaje + "</h2>";
-        setTimeout(() => {
-            window.location.href = "https://ucminglesa1.blogspot.com/2026/04/portal-de-autenticacion.html";
-        }, 3000);
-    }
+    document.documentElement.style.display = "block"; // evitar pantalla en blanco
+    document.body.innerHTML = `
+        <h2 style="text-align:center;margin-top:50px;">${mensaje}</h2>
+        <p style="text-align:center;">Redirigiendo...</p>
+    `;
+
+    setTimeout(() => {
+        window.location.href = "https://ucminglesa1.blogspot.com/2026/04/portal-de-autenticacion.html";
+    }, 2000);
+}
 
     function calcularDiasRestantes(fechaExp) {
         const ahora = new Date();
