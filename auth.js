@@ -1,120 +1,120 @@
 (function () {
 
     /* =========================
+       🔐 BASE DE USUARIOS
+    ========================= */
+
+    const estudiantes = {
+        "123": { nombre: "Licencia 6 meses", expira: "2026-10-06T00:00:00Z" },
+        "456": { nombre: "Licencia 6 meses", expira: "2026-10-06T00:00:00Z" },
+        "789": { nombre: "Licencia 1 año", expira: "2027-04-06T00:00:00Z" },
+        "012": { nombre: "Licencia 1 año", expira: "2027-04-06T00:00:00Z" }
+    };
+
+    /* =========================
        🔧 UTILIDADES
     ========================= */
 
-    function getCookie(nombre) {
-        const match = document.cookie.match(new RegExp('(^| )' + nombre + '=([^;]+)'));
+    function getCookie(name) {
+        const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
         return match ? decodeURIComponent(match[2]) : null;
     }
 
-    function borrarCookie(nombre) {
-        document.cookie = nombre + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    function generarSessionID() {
+        return Math.random().toString(36).substring(2) + Date.now();
     }
 
-    function limpiarSesion() {
-        borrarCookie("codigo");
-        borrarCookie("expiracion");
-        borrarCookie("session_id");
-        localStorage.removeItem("session_id");
+    function formatearFecha(fecha) {
+        return new Date(fecha).toLocaleString();
     }
 
-    function redirigirPortal() {
-        window.location.href =
-            "https://ucminglesa1.blogspot.com/2026/04/portal-de-autenticacion.html";
+    function calcularDias(fecha) {
+        return Math.ceil((new Date(fecha) - new Date()) / (1000 * 60 * 60 * 24));
     }
+
+    /* =========================
+       🚨 BLOQUEO
+    ========================= */
 
     function bloquear(mensaje) {
-        document.documentElement.style.display = "block";
 
         document.body.innerHTML = `
             <div style="text-align:center;margin-top:60px;font-family:Arial;">
                 <h2>${mensaje}</h2>
-                <p>Redirigiendo...</p>
+                <p>Redirigiendo al portal...</p>
             </div>
         `;
 
-        setTimeout(redirigirPortal, 2000);
+        setTimeout(() => {
+            window.location.href =
+                "https://ucminglesa1.blogspot.com/2026/04/portal-de-autenticacion.html";
+        }, 2000);
     }
 
-    function diasRestantes(fecha) {
-        const ahora = new Date();
-        const exp = new Date(fecha);
-        return Math.ceil((exp - ahora) / (1000 * 60 * 60 * 24));
-    }
+    /* =========================
+       🚪 VALIDACIÓN PRINCIPAL
+    ========================= */
 
-    function banner(dias) {
-        const b = document.createElement("div");
+    document.addEventListener("DOMContentLoaded", function () {
 
-        b.style.position = "fixed";
-        b.style.top = "0";
-        b.style.left = "0";
-        b.style.width = "100%";
-        b.style.padding = "10px";
-        b.style.textAlign = "center";
-        b.style.fontSize = "16px";
-        b.style.color = "white";
-        b.style.background = dias <= 5 ? "red" : "#000080";
-        b.style.zIndex = "9999";
+        const codigo = getCookie("codigo");
+        const session = getCookie("session_id");
+        const expCookie = getCookie("expiracion");
 
-        b.innerHTML = `Acceso activo | Te quedan ${dias} días`;
-
-        document.body.appendChild(b);
-        document.body.style.marginTop = "50px";
-    }
-
-    function validarSesion() {
-        const cookieSession = getCookie("session_id");
-        const localSession = localStorage.getItem("session_id");
-
-        if (!cookieSession || !localSession || cookieSession !== localSession) {
-            limpiarSesion();
-            bloquear("Sesión inválida o duplicada");
-            return false;
+        /* ❌ sin datos */
+        if (!codigo || !session || !expCookie) {
+            bloquear("Acceso no autorizado");
+            return;
         }
 
-        return true;
-    }
+        /* ❌ código inválido */
+        if (!estudiantes[codigo]) {
+            bloquear("Código inválido");
+            return;
+        }
 
-    /* =========================
-       🚫 OCULTAR INICIO
-    ========================= */
+        const usuario = estudiantes[codigo];
+        const expReal = new Date(usuario.expira);
 
-    document.documentElement.style.display = "none";
+        /* ❌ expirado (FUENTE REAL, no cookie) */
+        if (new Date() > expReal) {
+            bloquear("Acceso expirado");
+            return;
+        }
 
-    /* =========================
-       🔐 VALIDACIÓN
-    ========================= */
+        /* 🔐 sesión coherente */
+        const localSession = localStorage.getItem("session_id");
 
-    const codigo = getCookie("codigo");
-    const expiracion = getCookie("expiracion");
-    const session_id = getCookie("session_id");
+        if (!localSession || localSession !== session) {
+            bloquear("Sesión inválida");
+            return;
+        }
 
-    // ❌ Sin datos básicos
-    if (!codigo || !expiracion || !session_id) {
-        bloquear("Acceso no autorizado");
-        return;
-    }
+        /* =========================
+           ✅ ACCESO PERMITIDO
+        ========================= */
 
-    // ⏳ Expiración
-    if (new Date() > new Date(expiracion)) {
-        limpiarSesion();
-        bloquear("Acceso expirado");
-        return;
-    }
+        document.documentElement.style.display = "block";
 
-    // 🔐 Sesión única
-    if (!validarSesion()) return;
+        const dias = calcularDias(usuario.expira);
 
-    /* =========================
-       ✅ ACCESO OK
-    ========================= */
+        const banner = document.createElement("div");
+        banner.style.position = "fixed";
+        banner.style.top = "0";
+        banner.style.left = "0";
+        banner.style.width = "100%";
+        banner.style.padding = "10px";
+        banner.style.textAlign = "center";
+        banner.style.color = "white";
+        banner.style.background = dias <= 5 ? "red" : "#000080";
+        banner.style.zIndex = "9999";
+        banner.innerHTML = `Acceso activo | ${usuario.nombre} | ${dias} días restantes`;
 
-    const dias = diasRestantes(expiracion);
+        document.body.appendChild(banner);
 
-    banner(dias);
+        document.body.style.marginTop = "50px";
+        document.body.style.display = "block";
 
-    document.documentElement.style.display = "block";
+    });
 
 })();
