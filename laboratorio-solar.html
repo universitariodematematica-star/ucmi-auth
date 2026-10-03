@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Laboratorio Solar</title>
+</head>
+
+<body>
+
+    <h1>Laboratorio Solar</h1>
+
+    <pre id="resultado"></pre>
+
+    <script>
+
+        // ============================================================
+        // CONFIGURACIÓN
+        // ============================================================
+
+        const RADIO_TIERRA_KM = 6371;
+
+
+        // ============================================================
+        // CONVERSIÓN DE ÁNGULOS
+        // ============================================================
+
+        function gradosARadianes(grados) {
+
+            return grados * Math.PI / 180;
+
+        }
+
+
+        function radianesAGrados(radianes) {
+
+            return radianes * 180 / Math.PI;
+
+        }
+
+
+        // ============================================================
+        // DETERMINAR SI EL AÑO ES BISIESTO
+        // ============================================================
+
+        function esBisiesto(año) {
+
+            return (
+                año % 400 === 0 ||
+                (año % 4 === 0 && año % 100 !== 0)
+            );
+
+        }
+
+
+        // ============================================================
+        // OBTENER DÍA DEL AÑO
+        // ============================================================
+
+        function obtenerDiaDelAño(fecha) {
+
+            const inicioAño = new Date(
+                Date.UTC(
+                    fecha.getUTCFullYear(),
+                    0,
+                    1
+                )
+            );
+
+            const diferencia =
+                fecha.getTime() - inicioAño.getTime();
+
+            const unDia =
+                24 * 60 * 60 * 1000;
+
+            return Math.floor(diferencia / unDia) + 1;
+
+        }
+
+
+        // ============================================================
+        // HORA UTC DECIMAL
+        // ============================================================
+
+        function obtenerHoraDecimal(fecha) {
+
+            return (
+                fecha.getUTCHours() +
+                fecha.getUTCMinutes() / 60 +
+                fecha.getUTCSeconds() / 3600
+            );
+
+        }
+
+
+        // ============================================================
+        // ESTADO SOLAR
+        // ============================================================
+
+        function calcularEstadoSolar(fechaHoraUTC) {
+
+            const año =
+                fechaHoraUTC.getUTCFullYear();
+
+            const N =
+                obtenerDiaDelAño(fechaHoraUTC);
+
+            const h =
+                obtenerHoraDecimal(fechaHoraUTC);
+
+            const D =
+                esBisiesto(año)
+                    ? 366
+                    : 365;
+
+
+            // Variable temporal gamma
+
+            const gamma =
+                (2 * Math.PI / D) *
+                (N - 1 + (h - 12) / 24);
+
+
+            // Declinación solar
+
+            const declinacion =
+                0.006918
+                - 0.399912 * Math.cos(gamma)
+                + 0.070257 * Math.sin(gamma)
+                - 0.006758 * Math.cos(2 * gamma)
+                + 0.000907 * Math.sin(2 * gamma)
+                - 0.002697 * Math.cos(3 * gamma)
+                + 0.00148 * Math.sin(3 * gamma);
+
+
+            // Ecuación del tiempo
+
+            const ecuacionTiempo =
+                229.18 * (
+                    0.000075
+                    + 0.001868 * Math.cos(gamma)
+                    - 0.032077 * Math.sin(gamma)
+                    - 0.014615 * Math.cos(2 * gamma)
+                    - 0.040849 * Math.sin(2 * gamma)
+                );
+
+
+            // H0
+
+            const H0 =
+                gradosARadianes(15) * (h - 12)
+                + gradosARadianes(ecuacionTiempo / 4);
+
+
+            return {
+
+                declinacion,
+                ecuacionTiempo,
+                H0
+
+            };
+
+        }
+
+
+        // ============================================================
+        // SEN(H) / CRITERIO DE ILUMINACIÓN
+        // ============================================================
+
+        function calcularSenAlturaSolar(
+            latitud,
+            longitud,
+            estadoSolar
+        ) {
+
+            const φ =
+                gradosARadianes(latitud);
+
+            const λ =
+                gradosARadianes(longitud);
+
+            const δ =
+                estadoSolar.declinacion;
+
+            const H0 =
+                estadoSolar.H0;
+
+
+            const H =
+                H0 + λ;
+
+
+            const S =
+                Math.sin(φ) * Math.sin(δ)
+                +
+                Math.cos(φ) *
+                Math.cos(δ) *
+                Math.cos(H);
+
+
+            return S;
+
+        }
+
+
+        // ============================================================
+        // ÁREA DE UNA CELDA
+        // ============================================================
+
+        function calcularAreaCelda(
+            latitudSur,
+            latitudNorte,
+            longitudOeste,
+            longitudEste
+        ) {
+
+            const φ1 =
+                gradosARadianes(latitudSur);
+
+            const φ2 =
+                gradosARadianes(latitudNorte);
+
+            const λ1 =
+                gradosARadianes(longitudOeste);
+
+            const λ2 =
+                gradosARadianes(longitudEste);
+
+
+            const area =
+                RADIO_TIERRA_KM ** 2
+                *
+                (Math.sin(φ2) - Math.sin(φ1))
+                *
+                (λ2 - λ1);
+
+
+            return area;
+
+        }
+
+
+        // ============================================================
+        // PRUEBAS
+        // ============================================================
+
+        function ejecutarPruebas() {
+
+            const resultados = [];
+
+
+            // --------------------------------------------------------
+            // PRUEBA 1
+            // --------------------------------------------------------
+
+            const rad90 =
+                gradosARadianes(90);
+
+            resultados.push(
+                "90° en radianes = " +
+                rad90
+            );
+
+
+            // --------------------------------------------------------
+            // PRUEBA 2
+            // --------------------------------------------------------
+
+            const grados =
+                radianesAGrados(Math.PI);
+
+            resultados.push(
+                "π radianes en grados = " +
+                grados
+            );
+
+
+            // --------------------------------------------------------
+            // PRUEBA 3
+            // --------------------------------------------------------
+
+            const fecha =
+                new Date("2026-03-20T12:00:00Z");
+
+            const solar =
+                calcularEstadoSolar(fecha);
+
+
+            resultados.push(
+                "Declinación solar = " +
+                radianesAGrados(
+                    solar.declinacion
+                ) +
+                "°"
+            );
+
+
+            resultados.push(
+                "Ecuación del tiempo = " +
+                solar.ecuacionTiempo +
+                " minutos"
+            );
+
+
+            resultados.push(
+                "H0 = " +
+                radianesAGrados(
+                    solar.H0
+                ) +
+                "°"
+            );
+
+
+            // --------------------------------------------------------
+            // PRUEBA 4
+            // Ecuador, longitud 0°, al mediodía solar aproximado
+            // --------------------------------------------------------
+
+            const S =
+                calcularSenAlturaSolar(
+                    0,
+                    0,
+                    solar
+                );
+
+
+            resultados.push(
+                "S en latitud 0°, longitud 0° = " +
+                S
+            );
+
+
+            // --------------------------------------------------------
+            // PRUEBA 5
+            // Área de una pequeña celda
+            // --------------------------------------------------------
+
+            const area =
+                calcularAreaCelda(
+                    0,
+                    1,
+                    0,
+                    1
+                );
+
+
+            resultados.push(
+                "Área de celda 1° × 1° en el Ecuador = " +
+                area +
+                " km²"
+            );
+
+
+            return resultados.join("\n");
+
+        }
+
+
+        // ============================================================
+        // EJECUTAR
+        // ============================================================
+
+        document.getElementById("resultado").textContent =
+            ejecutarPruebas();
+
+    </script>
+
+</body>
+
+</html>
