@@ -375,8 +375,26 @@
         // EJECUTAR
         // ============================================================
 
-        document.getElementById("resultado").textContent =
-            ejecutarPruebas();
+        document.getElementById("btnCalcular").addEventListener("click", function () {
+
+            const valor = document.getElementById("fechaHora").value;
+        
+            if (!valor) {
+                document.getElementById("resultado").textContent =
+                    "Selecciona una fecha y hora.";
+                return;
+            }
+        
+            const fecha = new Date(valor);
+        
+            const estadoSolar = calcularEstadoSolar(fecha);
+        
+            document.getElementById("resultado").textContent =
+                "Fecha seleccionada = " + fecha.toISOString() + "\n" +
+                "Declinación solar = " + radianesAGrados(estadoSolar.declinacion) + "°\n" +
+                "Ecuación del tiempo = " + estadoSolar.ecuacionTiempo + " minutos\n" +
+                "H0 = " + radianesAGrados(estadoSolar.H0) + "°";
+        });
 
     </script>
 
